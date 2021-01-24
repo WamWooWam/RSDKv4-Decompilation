@@ -23,10 +23,11 @@ inline int getLowerRate(int intendRate, int targetRate)
 
 bool processEvents()
 {
-#if RETRO_USING_SDL
+#if RETRO_USING_SDL1 || RETRO_USING_SDL2
     while (SDL_PollEvent(&Engine.sdlEvents)) {
         // Main Events
         switch (Engine.sdlEvents.type) {
+#if RETRO_USING_SDL2
             case SDL_WINDOWEVENT:
                 switch (Engine.sdlEvents.window.event) {
                     case SDL_WINDOWEVENT_MAXIMIZED: {
@@ -47,38 +48,49 @@ bool processEvents()
                     Engine.window = NULL;
                 }
                 return false;
-            case SDL_APP_WILLENTERBACKGROUND: /*Engine.Callback(CALLBACK_ENTERBG);*/ break;
-            case SDL_APP_WILLENTERFOREGROUND: /*Engine.Callback(CALLBACK_ENTERFG);*/ break;
-            case SDL_APP_TERMINATING: break;
+#endif
 
 #ifdef RETRO_USING_MOUSE
             case SDL_MOUSEMOTION:
+#if RETRO_USING_SDL2
                 if (SDL_GetNumTouchFingers(SDL_GetTouchDevice(RETRO_TOUCH_DEVICE)) <= 0) { // Touch always takes priority over mouse
+#endif                                                                                     //! RETRO_USING_SDL2
                     SDL_GetMouseState(&touchX[0], &touchY[0]);
                     touchX[0] /= Engine.windowScale;
                     touchY[0] /= Engine.windowScale;
                     touches = 1;
+#if RETRO_USING_SDL2
                 }
+#endif //! RETRO_USING_SDL2
                 break;
             case SDL_MOUSEBUTTONDOWN:
+#if RETRO_USING_SDL2
                 if (SDL_GetNumTouchFingers(SDL_GetTouchDevice(RETRO_TOUCH_DEVICE)) <= 0) { // Touch always takes priority over mouse
+#endif                                                                                     //! RETRO_USING_SDL2
                     switch (Engine.sdlEvents.button.button) {
                         case SDL_BUTTON_LEFT: touchDown[0] = 1; break;
                     }
                     touches = 1;
+#if RETRO_USING_SDL2
                 }
+#endif //! RETRO_USING_SDL2
                 break;
             case SDL_MOUSEBUTTONUP:
+#if RETRO_USING_SDL2
                 if (SDL_GetNumTouchFingers(SDL_GetTouchDevice(RETRO_TOUCH_DEVICE)) <= 0) { // Touch always takes priority over mouse
+#endif                                                                                     //! RETRO_USING_SDL2
                     switch (Engine.sdlEvents.button.button) {
                         case SDL_BUTTON_LEFT: touchDown[0] = 0; break;
                     }
                     touches = 1;
+#if RETRO_USING_SDL2
                 }
+#endif //! RETRO_USING_SDL2
                 break;
 #endif
 
 #ifdef RETRO_USING_TOUCH
+#if RETRO_USING_SDL2
             case SDL_FINGERMOTION:
                 touches = SDL_GetNumTouchFingers(SDL_GetTouchDevice(RETRO_TOUCH_DEVICE));
                 for (int i = 0; i < touches; i++) {
@@ -100,6 +112,7 @@ bool processEvents()
                 }
                 break;
             case SDL_FINGERUP: touches = SDL_GetNumTouchFingers(SDL_GetTouchDevice(RETRO_TOUCH_DEVICE)); break;
+#endif //! RETRO_USING_SDL2
 #endif
 
             case SDL_KEYDOWN:
@@ -112,16 +125,32 @@ bool processEvents()
                     case SDLK_F4:
                         Engine.isFullScreen ^= 1;
                         if (Engine.isFullScreen) {
+#if RETRO_USING_SDL1
+                            Engine.windowSurface = SDL_SetVideoMode(SCREEN_XSIZE * Engine.windowScale, SCREEN_YSIZE * Engine.windowScale, 16,
+                                                                    SDL_SWSURFACE | SDL_FULLSCREEN);
+                            SDL_ShowCursor(SDL_FALSE);
+#endif
+
+#if RETRO_USING_SDL2
                             SDL_RestoreWindow(Engine.window);
                             SDL_SetWindowFullscreen(Engine.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
                             SDL_ShowCursor(SDL_FALSE);
+#endif
                         }
                         else {
+#if RETRO_USING_SDL1
+                            Engine.windowSurface =
+                                SDL_SetVideoMode(SCREEN_XSIZE * Engine.windowScale, SCREEN_YSIZE * Engine.windowScale, 16, SDL_SWSURFACE);
+                            SDL_ShowCursor(SDL_TRUE);
+#endif
+                        
+#if RETRO_USING_SDL2
                             SDL_SetWindowFullscreen(Engine.window, false);
                             SDL_ShowCursor(SDL_TRUE);
                             SDL_SetWindowSize(Engine.window, SCREEN_XSIZE * Engine.windowScale, SCREEN_YSIZE * Engine.windowScale);
                             SDL_SetWindowPosition(Engine.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
                             SDL_RestoreWindow(Engine.window);
+#endif
                         }
                         break;
                     case SDLK_F1:
@@ -145,6 +174,8 @@ bool processEvents()
                             }
                             stageMode       = STAGEMODE_LOAD;
                             Engine.gameMode = ENGINE_MAINGAME;
+                            SetGlobalVariableByName("lampPostID", 0); // For S1
+                            SetGlobalVariableByName("starPostID", 0); // For S2
                         }
                         break;
                     case SDLK_F3:
@@ -161,6 +192,8 @@ bool processEvents()
                             }
                             stageMode       = STAGEMODE_LOAD;
                             Engine.gameMode = ENGINE_MAINGAME;
+                            SetGlobalVariableByName("lampPostID", 0); // For S1
+                            SetGlobalVariableByName("starPostID", 0); // For S2
                         }
                         break;
                     case SDLK_F10:
@@ -191,12 +224,19 @@ bool processEvents()
                         break;
 #endif
                 }
+
+#if RETRO_USING_SDL1
+                keyState[Engine.sdlEvents.key.keysym.sym] = 1;
+#endif
                 break;
             case SDL_KEYUP:
                 switch (Engine.sdlEvents.key.keysym.sym) {
                     default: break;
                     case SDLK_BACKSPACE: Engine.gameSpeed = 1; break;
                 }
+#if RETRO_USING_SDL1
+                keyState[Engine.sdlEvents.key.keysym.sym] = 0;
+#endif
                 break;
             case SDL_QUIT: return false;
         }
@@ -391,9 +431,6 @@ void RetroEngine::Init()
         StrCopy(achievements[11].name, "Beat the Clock");
     }
 
-    SetGlobalVariableByName("options.touchControls", RETRO_GAMEPLATFORM);
-    SetGlobalVariableByName("Engine.PlatformID", RETRO_GAMEPLATFORM);
-
     if (!finishedStartMenu)
         initStartMenu(0);
 }
@@ -428,7 +465,7 @@ void RetroEngine::Run()
     ReleaseRenderDevice();
     writeSettings();
 
-#if RETRO_USING_SDL
+#if RETRO_USING_SDL1 || RETRO_USING_SDL2
     SDL_Quit();
 #endif
 }
@@ -436,8 +473,8 @@ void RetroEngine::Run()
 bool RetroEngine::LoadGameConfig(const char *filePath)
 {
     FileInfo info;
-    int fileBuffer  = 0;
-    int fileBuffer2 = 0;
+    byte fileBuffer = 0;
+    byte fileBuffer2 = 0;
     char strBuffer[0x40];
 
     bool loaded = LoadFile(filePath, &info);
@@ -457,20 +494,20 @@ bool RetroEngine::LoadGameConfig(const char *filePath)
         }
 
         // Read Obect Names
-        int objectCount = 0;
+        byte objectCount = 0;
         FileRead(&objectCount, 1);
-        for (int o = 0; o < objectCount; ++o) {
+        for (byte o = 0; o < objectCount; ++o) {
             FileRead(&fileBuffer, 1);
             FileRead(&strBuffer, fileBuffer);
         }
 
         // Read Script Paths
-        for (int s = 0; s < objectCount; ++s) {
+        for (byte s = 0; s < objectCount; ++s) {
             FileRead(&fileBuffer, 1);
             FileRead(&strBuffer, fileBuffer);
         }
 
-        int varCount = 0;
+        byte varCount = 0;
         FileRead(&varCount, 1);
         globalVariablesCount = varCount;
         for (int v = 0; v < varCount; ++v) {
@@ -491,28 +528,28 @@ bool RetroEngine::LoadGameConfig(const char *filePath)
         }
 
         // Read SFX
-        int globalSFXCount = 0;
+        byte globalSFXCount = 0;
         FileRead(&globalSFXCount, 1);
         for (int s = 0; s < globalSFXCount; ++s) { // SFX Names
             FileRead(&fileBuffer, 1);
             FileRead(&strBuffer, fileBuffer);
             strBuffer[fileBuffer] = 0;
         }
-        for (int s = 0; s < globalSFXCount; ++s) { // SFX Paths
+        for (byte s = 0; s < globalSFXCount; ++s) { // SFX Paths
             FileRead(&fileBuffer, 1);
             FileRead(&strBuffer, fileBuffer);
             strBuffer[fileBuffer] = 0;
         }
 
         // Read Player Names
-        int playerCount = 0;
+        byte playerCount = 0;
         FileRead(&playerCount, 1);
-        for (int p = 0; p < playerCount; ++p) {
+        for (byte p = 0; p < playerCount; ++p) {
             FileRead(&fileBuffer, 1);
             FileRead(&strBuffer, fileBuffer);
         }
 
-        for (int c = 0; c < 4; ++c) {
+        for (byte c = 0; c < 4; ++c) {
             // Special Stages are stored as cat 2 in file, but cat 3 in game :(
             int cat = c;
             if (c == 2)
@@ -520,8 +557,9 @@ bool RetroEngine::LoadGameConfig(const char *filePath)
             else if (c == 3)
                 cat = 2;
             stageListCount[cat] = 0;
-            FileRead(&stageListCount[cat], 1);
-            for (int s = 0; s < stageListCount[cat]; ++s) {
+            FileRead(&fileBuffer, 1);
+            stageListCount[cat] = fileBuffer;
+            for (byte s = 0; s < stageListCount[cat]; ++s) {
 
                 // Read Stage Folder
                 FileRead(&fileBuffer, 1);

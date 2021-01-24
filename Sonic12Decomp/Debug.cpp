@@ -62,12 +62,14 @@ void processStageSelect()
     keyDown.up    = false;
     keyDown.down  = false;
 
-    CheckKeyDown(&keyDown, 0x13);
-    CheckKeyPress(&keyPress, 0xB3);
+    CheckKeyDown(&keyDown);
+    CheckKeyPress(&keyPress);
 
+#if defined RETRO_USING_MOUSE || defined RETRO_USING_TOUCH
     DrawSprite(32, 0x42, 16, 16, 78, 240, textMenuSurfaceNo);
     DrawSprite(32, 0xB2, 16, 16, 95, 240, textMenuSurfaceNo);
     DrawSprite(SCREEN_XSIZE - 32, SCREEN_YSIZE - 32, 16, 16, 112, 240, textMenuSurfaceNo);
+#endif
 
     if (!keyDown.start && !keyDown.up && !keyDown.down) {
         if (touches > 0) {
@@ -291,6 +293,8 @@ void processStageSelect()
                 Engine.gameMode   = ENGINE_MAINGAME;
                 stageListPosition = gameMenu[1].selection1;
                 SetGlobalVariableByName("options.gameMode", 0);
+                SetGlobalVariableByName("lampPostID", 0); // For S1
+                SetGlobalVariableByName("starPostID", 0); // For S2
             }
             else if (keyPress.B) {
                 setTextMenu(DEVMENU_STAGELISTSEL);
@@ -380,24 +384,6 @@ void initStartMenu(int mode)
     else {
         // finished TA act
         int listPos = taListStore;
-        int max     = listPos < stageListCount[STAGELIST_REGULAR];
-        for (int s = 0; s < stageListCount[STAGELIST_REGULAR]; ++s) {
-            if (StrComp(stageList[STAGELIST_REGULAR][s].name, "STAGE MENU")) {
-                max = s;
-                break;
-            }
-        }
-
-        if (activeStageList == STAGELIST_SPECIAL) {
-            listPos += max;
-        }
-
-        if (activeStageList == STAGELIST_BONUS) {
-            if (listPos > 1)
-                listPos = 1;
-            listPos ^= 1;
-            listPos += max;
-        }
 
         int result = GetGlobalVariableByName("timeAttack.result");
         if (result < saveRAM[3 * listPos + 0x40]) {
@@ -546,7 +532,7 @@ void setTextMenu(int sm)
             StrAdd(title, " START MENU");
             AddTextMenuEntry(&gameMenu[0], title);
             AddTextMenuEntry(&gameMenu[0], " ");
-            AddTextMenuEntry(&gameMenu[0], " ");
+            AddTextMenuEntry(&gameMenu[0], Engine.gameVersion);
             AddTextMenuEntry(&gameMenu[0], " ");
             AddTextMenuEntry(&gameMenu[0], " ");
             AddTextMenuEntry(&gameMenu[0], " ");
@@ -744,8 +730,8 @@ void processStartMenu()
     keyDown.up    = false;
     keyDown.down  = false;
 
-    CheckKeyDown(&keyDown, 0xFF);
-    CheckKeyPress(&keyPress, 0xFF);
+    CheckKeyDown(&keyDown);
+    CheckKeyPress(&keyPress);
 
     if (!keyDown.start && !keyDown.up && !keyDown.down) {
         if (touches > 0) {
@@ -1437,7 +1423,11 @@ void processStartMenu()
         default: break;
     }
 
-    DrawSprite(32, 0x42, 16, 16, 78, 240, textMenuSurfaceNo);
-    DrawSprite(32, 0xB2, 16, 16, 95, 240, textMenuSurfaceNo);
-    DrawSprite(SCREEN_XSIZE - 32, SCREEN_YSIZE - 32, 16, 16, 112, 240, textMenuSurfaceNo);
+    if (!Engine.finishedStartMenu) {
+#if defined RETRO_USING_MOUSE || defined RETRO_USING_TOUCH
+        DrawSprite(32, 0x42, 16, 16, 78, 240, textMenuSurfaceNo);
+        DrawSprite(32, 0xB2, 16, 16, 95, 240, textMenuSurfaceNo);
+        DrawSprite(SCREEN_XSIZE - 32, SCREEN_YSIZE - 32, 16, 16, 112, 240, textMenuSurfaceNo);
+#endif
+    }
 }

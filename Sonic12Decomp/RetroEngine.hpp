@@ -9,6 +9,7 @@
 // ================
 #include <stdio.h>
 #include <string.h>
+#include <cmath>
 
 // ================
 // STANDARD TYPES
@@ -45,42 +46,40 @@ typedef unsigned int uint;
 #if defined WINAPI_FAMILY
 #if WINAPI_FAMILY != WINAPI_FAMILY_APP
 #define RETRO_PLATFORM (RETRO_WIN)
-#define RETRO_PLATTYPE (RETRO_STANDARD)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
 #else
 #include <WInRTIncludes.hpp>
 
 #define RETRO_PLATFORM (RETRO_UWP)
-#define RETRO_PLATTYPE (UAP_GetRetroGamePlatform())
+#define RETRO_DEVICETYPE (UAP_GetRetroGamePlatform())
 #endif
 #else
 #define RETRO_PLATFORM (RETRO_WIN)
-#define RETRO_PLATTYPE (RETRO_STANDARD)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
 #endif
 
 #elif defined __APPLE__
 #if __IPHONEOS__
 #define RETRO_PLATFORM (RETRO_iOS)
-#define RETRO_PLATTYPE (RETRO_MOBILE)
+#define RETRO_DEVICETYPE (RETRO_MOBILE)
 #else
 #define RETRO_PLATFORM (RETRO_OSX)
-#define RETRO_PLATTYPE (RETRO_STANDARD)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
 #endif
 #elif defined __vita__
 #define RETRO_PLATFORM (RETRO_VITA)
-#define RETRO_PLATTYPE (RETRO_STANDARD)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
 #else
 #define RETRO_PLATFORM (RETRO_WIN)
-#define RETRO_PLATTYPE (RETRO_STANDARD)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
 #endif
 
 #if RETRO_PLATFORM == RETRO_VITA
 #define DEFAULT_SCREEN_XSIZE 480
 #define DEFAULT_FULLSCREEN   false
-#define SCREEN_YSIZE         (272)
 #else
 #define DEFAULT_SCREEN_XSIZE 424
 #define DEFAULT_FULLSCREEN   false
-#define SCREEN_YSIZE         (240)
 #define RETRO_USING_MOUSE
 #define RETRO_USING_TOUCH
 #endif
@@ -90,9 +89,11 @@ typedef unsigned int uint;
 #endif
 
 #if RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_OSX || RETRO_PLATFORM == RETRO_VITA || RETRO_PLATFORM == RETRO_UWP
-#define RETRO_USING_SDL (1)
+#define RETRO_USING_SDL1 (0)
+#define RETRO_USING_SDL2 (1)
 #else // Since its an else & not an elif these platforms probably aren't supported yet
-#define RETRO_USING_SDL (0)
+#define RETRO_USING_SDL1 (0)
+#define RETRO_USING_SDL2 (0)
 #endif
 
 #if RETRO_PLATFORM == RETRO_iOS || RETRO_PLATFORM == RETRO_ANDROID || RETRO_PLATFORM == RETRO_WP7
@@ -152,10 +153,15 @@ enum RetroGameType {
 };
 
 // General Defines
+#define SCREEN_YSIZE (240)
 #define SCREEN_CENTERY (SCREEN_YSIZE / 2)
 
 #if RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_UWP
+#if RETRO_USING_SDL2
 #include <SDL.h>
+#elif RETRO_USING_SDL1
+#include <SDL.h>
+#endif
 #include <vorbis/vorbisfile.h>
 #elif RETRO_PLATFORM == RETRO_OSX
 #include <SDL2/SDL.h>
@@ -163,7 +169,7 @@ enum RetroGameType {
 
 #include "cocoaHelpers.hpp"
 
-#elif RETRO_USING_SDL
+#elif RETRO_USING_SDL2
 #include <SDL2/SDL.h>
 #include <vorbis/vorbisfile.h>
 
@@ -283,6 +289,7 @@ public:
     bool startFullScreen  = false; // if should start as fullscreen
     bool borderless       = false;
     bool vsync            = false;
+    bool enhancedScaling  = true; // enable enhanced scaling
     int windowScale       = 2;
     int refreshRate       = 60; // user-picked screen update rate
     int screenRefreshRate = 60; // hardware screen update rate
@@ -292,11 +299,23 @@ public:
     int renderFrameIndex = 0;
     int skipFrameIndex   = 0;
 
-#if RETRO_USING_SDL
+    int windowXSize; // width of window/screen in the previous frame
+    int windowYSize; // height of window/screen in the previous frame
+
+#if RETRO_USING_SDL2
     SDL_Window *window          = nullptr;
     SDL_Renderer *renderer      = nullptr;
     SDL_Texture *screenBuffer   = nullptr;
     SDL_Texture *screenBuffer2x = nullptr;
+
+    SDL_Event sdlEvents;
+#endif
+
+#if RETRO_USING_SDL1
+    SDL_Surface *windowSurface = nullptr;
+
+    SDL_Surface *screenBuffer   = nullptr;
+    SDL_Surface *screenBuffer2x = nullptr;
 
     SDL_Event sdlEvents;
 #endif
