@@ -391,6 +391,7 @@ void RetroEngine::Init()
         StrCopy(achievements[11].name, "Beat the Clock");
     }
 
+    SetGlobalVariableByName("options.touchControls", RETRO_GAMEPLATFORM);
     SetGlobalVariableByName("Engine.PlatformID", RETRO_GAMEPLATFORM);
 
     if (!finishedStartMenu)

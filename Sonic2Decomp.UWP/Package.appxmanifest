@@ -3,7 +3,7 @@
   <Identity
     Name="Sonic2"
     Publisher="CN=wamwo"
-    Version="1.0.8.0" />
+    Version="1.0.9.0" />
   <mp:PhoneIdentity PhoneProductId="a7f38b9a-d903-4b63-bdb3-cfc6387ef9f3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
   <Properties>
     <DisplayName>Sonic the Hedgehog 2</DisplayName>
