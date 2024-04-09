@@ -1,6 +1,12 @@
 #include "RetroEngine.hpp"
 #include <cmath>
 
+#undef RETRO_USING_SDL2 
+#undef RETRO_USING_SDL1 
+
+#define RETRO_USING_SDL2 (0)
+#define RETRO_USING_SDL1 (1)
+
 int globalSFXCount = 0;
 int stageSFXCount  = 0;
 
@@ -247,14 +253,14 @@ void ProcessMusicStream(Sint32 *stream, size_t bytes_wanted)
             while (bytes_gotten < bytes_wanted) {
                 // We need more samples: get some
                 long bytes_read =
-                    ov_read(&oggFilePtr->vorbisFile, (char *)oggFilePtr->buffer,
-                            sizeof(oggFilePtr->buffer) > (bytes_wanted - bytes_gotten) ? (bytes_wanted - bytes_gotten) : sizeof(oggFilePtr->buffer),
-                            0, 2, 1, &oggFilePtr->vorbBitstream);
+                    ov_read(&streamInfoPtr->vorbisFile, (char *)streamInfoPtr->buffer,
+                            sizeof(streamInfoPtr->buffer) > (bytes_wanted - bytes_gotten) ? (bytes_wanted - bytes_gotten) : sizeof(streamInfoPtr->buffer),
+                            0, 2, 1, &streamInfoPtr->vorbBitstream);
 
                 if (bytes_read == 0) {
                     // We've reached the end of the file
-                    if (oggFilePtr->trackLoop) {
-                        ov_pcm_seek(&oggFilePtr->vorbisFile, oggFilePtr->loopPoint);
+                    if (streamInfoPtr->trackLoop) {
+                        ov_pcm_seek(&streamInfoPtr->vorbisFile, streamInfoPtr->loopPoint);
                         continue;
                     }
                     else {
@@ -264,7 +270,7 @@ void ProcessMusicStream(Sint32 *stream, size_t bytes_wanted)
                 }
 
                 if (bytes_read > 0) {
-                    memcpy(buffer + bytes_gotten, oggFilePtr->buffer, bytes_read);
+                    memcpy(buffer + bytes_gotten, streamInfoPtr->buffer, bytes_read);
                     bytes_gotten += bytes_read;
                 }
                 else {
@@ -275,9 +281,10 @@ void ProcessMusicStream(Sint32 *stream, size_t bytes_wanted)
             if (bytes_gotten > 0) {
                 SDL_AudioCVT convert;
                 MEM_ZERO(convert);
-                int cvtResult = SDL_BuildAudioCVT(&convert, oggFilePtr->spec.format, oggFilePtr->spec.channels, oggFilePtr->spec.freq,
+                int cvtResult = SDL_BuildAudioCVT(&convert, streamInfoPtr->spec.format, streamInfoPtr->spec.channels, streamInfoPtr->spec.freq,
                                                   audioDeviceFormat.format, audioDeviceFormat.channels, audioDeviceFormat.freq);
-                if (cvtResult == 0) {
+				
+				if (cvtResult >= 0) {
                     if (convert.len_mult > 0) {
                         convert.buf = (byte *)malloc(bytes_gotten * convert.len_mult);
                         convert.len = bytes_gotten;
@@ -285,14 +292,11 @@ void ProcessMusicStream(Sint32 *stream, size_t bytes_wanted)
                         SDL_ConvertAudio(&convert);
                     }
                 }
-
-                // Now that we know there are enough samples, read them and mix them
-                // int bytes_done = SDL_AudioStreamGet(oggFilePtr->stream, oggFilePtr->buffer, bytes_wanted);
-                // if (bytes_done == -1) {
-                //    return;
-                //}
-
-                if (cvtResult == 0)
+				else {
+					puts(SDL_GetError());
+				}
+				
+                if (cvtResult >= 0)
                     ProcessAudioMixing(stream, (const Sint16 *)convert.buf, bytes_gotten / sizeof(Sint16), (bgmVolume * masterVolume) / MAX_VOLUME,
                                        0);
 
@@ -482,9 +486,9 @@ void LoadMusic(void *userdata)
 #endif
 
 #if RETRO_USING_SDL1
-            playbackInfo->spec.format   = AUDIO_S16;
-            playbackInfo->spec.channels = playbackInfo->vorbisFile.vi->channels;
-            playbackInfo->spec.freq     = (int)playbackInfo->vorbisFile.vi->rate;
+            strmInfo->spec.format   = AUDIO_S16;
+            strmInfo->spec.channels = strmInfo->vorbisFile.vi->channels;
+            strmInfo->spec.freq     = (int)strmInfo->vorbisFile.vi->rate;
 #endif
 
             if (musicStartPos) {

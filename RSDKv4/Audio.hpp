@@ -1,6 +1,12 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
+#undef RETRO_USING_SDL2 
+#undef RETRO_USING_SDL1 
+
+#define RETRO_USING_SDL2 (0)
+#define RETRO_USING_SDL1 (1)
+
 #define TRACK_COUNT (0x10)
 #define SFX_COUNT   (0x100)
 #if !RETRO_USE_ORIGINAL_CODE
@@ -317,5 +323,12 @@ inline void ReleaseAudioDevice()
     ReleaseStageSfx();
     ReleaseGlobalSfx();
 }
+
+
+#undef RETRO_USING_SDL2 
+#undef RETRO_USING_SDL1 
+
+#define RETRO_USING_SDL2 (1)
+#define RETRO_USING_SDL1 (0)
 
 #endif // !AUDIO_H

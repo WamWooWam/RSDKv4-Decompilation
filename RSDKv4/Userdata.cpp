@@ -195,7 +195,9 @@ void InitUserdata()
 
 #if RETRO_PLATFORM == RETRO_OSX
     sprintf(gamePath, "%s/RSDKv4", getResourcesPath());
+#if RETRO_USE_MOD_LOADER
     sprintf(modsPath, "%s/RSDKv4/", getResourcesPath());
+#endif
 
     mkdir(gamePath, 0777);
 #elif RETRO_PLATFORM == RETRO_ANDROID

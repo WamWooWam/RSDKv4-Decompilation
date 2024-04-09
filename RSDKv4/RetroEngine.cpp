@@ -292,7 +292,8 @@ void RetroEngine::Init()
 #if RETRO_USE_NETWORKING
     InitNetwork();
 #endif
-
+	
+	bool hasDataPack = false;
     char dest[0x200];
 #if RETRO_PLATFORM == RETRO_UWP
     static char resourcePath[256] = { 0 };
@@ -316,7 +317,12 @@ void RetroEngine::Init()
     StrCopy(dest, BASE_PATH);
     StrAdd(dest, Engine.dataFile[0]);
 #endif
-    CheckRSDKFile(dest);
+    if (!CheckRSDKFile(dest))
+	{
+		if (pickRSDKFile()) {
+			CheckRSDKFile(dest);
+		}
+	}
 #else
     CheckRSDKFile("Data.rsdk");
 #endif
@@ -416,6 +422,9 @@ void RetroEngine::Init()
             }
         }
     }
+	else {
+		showMissingRSDKMessage();
+	}
 
 #if !RETRO_USE_ORIGINAL_CODE
     gameType = GAME_SONIC2;

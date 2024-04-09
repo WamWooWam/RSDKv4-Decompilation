@@ -32,7 +32,7 @@ GFXSurface gfxSurface[SURFACE_COUNT];
 byte graphicData[GFXDATA_SIZE];
 
 DisplaySettings displaySettings;
-bool convertTo32Bit     = false;
+bool convertTo32Bit     = true;
 bool mixFiltersOnJekyll = false;
 
 #if RETRO_USING_OPENGL

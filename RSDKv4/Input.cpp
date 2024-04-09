@@ -242,7 +242,7 @@ void controllerInit(byte controllerID)
 void controllerClose(byte controllerID)
 {
 #if RETRO_USING_SDL2
-    SDL_GameController *controller = SDL_GameControllerFromInstanceID(controllerID);
+    SDL_GameController *controller = SDL_GameControllerOpen(controllerID);
     if (controller) {
         SDL_GameControllerClose(controller);
 #endif
