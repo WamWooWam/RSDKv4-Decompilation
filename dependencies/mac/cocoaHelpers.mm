@@ -6,12 +6,6 @@
 #include "cocoaHelpers.hpp"
 #include <SDL2/SDL.h>
 
-@interface RSDKApp : NSObject
-@end
-
-static int gArgc;
-static char** gArgv;
-
 const char* getResourcesPath(void)
 {
 	static char pathStorage[256] = {0};
@@ -123,23 +117,6 @@ void showMissingRSDKMessage(void) {
 	
 	[pool release];
 }
-
-@implementation RSDKApp 
-
-- (void) applicationDidFinishLaunching: (NSNotification*) notification {
-	int status = SDL_main(gArgc, gArgv);
-	exit(status);
-}
-
-- (void)terminate: (id)sender 
-{
-	printf("funny\n");
-	SDL_Event event{};
-	event.type = SDL_QUIT;
-	SDL_PushEvent(&event);
-}
-
-@end
 
 int main(int argc, char** argv) {	
 	NSAutoreleasePool* pool = [NSAutoreleasePool new];	
