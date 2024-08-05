@@ -2,7 +2,15 @@
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
+
 #include "cocoaHelpers.hpp"
+#include <SDL2/SDL.h>
+
+@interface RSDKApp : NSObject
+@end
+
+static int gArgc;
+static char** gArgv;
 
 const char* getResourcesPath(void)
 {
@@ -67,15 +75,29 @@ bool pickRSDKFile() {
 	auto response = [dialog runModal];
 	
 	if (response == 1) {
-		NSError* error = nil;
-		if ([[NSFileManager defaultManager] copyItemAtPath: [[dialog URL] path] toPath: completePath error: &error]) {
-			[pool release];
-			return TRUE;			
+		if ([[NSFileManager defaultManager] respondsToSelector: @selector(copyItemAtPath:toPath:error:)]) {		
+			NSError* error = nil;
+			if ([[NSFileManager defaultManager] copyItemAtPath: [[dialog URL] path] toPath: completePath error: &error]) {
+				[pool release];
+				return TRUE;			
+			}
+			else {
+				printf("error: %s\n", [[error localizedDescription] UTF8String]);
+				[pool release];
+				return FALSE;
+			}
 		}
 		else {
-			printf("error: %s\n", [[error localizedDescription] UTF8String]);
-			[pool release];
-			return FALSE;
+			if ([[NSFileManager defaultManager] copyPath: [[dialog URL] path] toPath: completePath handler: nil]) {
+				[pool release];
+				return TRUE;			
+			}
+			else {
+				printf("couldn't copy file, no idea why :D\n");
+				[pool release];
+				return FALSE;
+			}
+			
 		}
 	}
 	
@@ -100,6 +122,31 @@ void showMissingRSDKMessage(void) {
 	[alert runModal];
 	
 	[pool release];
+}
+
+@implementation RSDKApp 
+
+- (void) applicationDidFinishLaunching: (NSNotification*) notification {
+	int status = SDL_main(gArgc, gArgv);
+	exit(status);
+}
+
+- (void)terminate: (id)sender 
+{
+	printf("funny\n");
+	SDL_Event event{};
+	event.type = SDL_QUIT;
+	SDL_PushEvent(&event);
+}
+
+@end
+
+int main(int argc, char** argv) {	
+	NSAutoreleasePool* pool = [NSAutoreleasePool new];	
+	[NSApplication sharedApplication];
+	
+	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_main(argc, argv);
 }
 
 

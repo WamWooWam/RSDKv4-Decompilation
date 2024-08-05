@@ -48,7 +48,7 @@ void parseArguments(int argc, char *argv[])
 }
 #endif
 
-int main(int argc, char *argv[])
+int SDL_main(int argc, char *argv[])
 {
 #if !RETRO_USE_ORIGINAL_CODE
     parseArguments(argc, argv);

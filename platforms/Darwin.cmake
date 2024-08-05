@@ -5,11 +5,17 @@ find_package(PkgConfig REQUIRED)
 
 add_executable(RetroEngine ${RETRO_FILES} ../dependencies/mac/cocoahelpers.mm)
 
-target_compile_options(RetroEngine PRIVATE -g -gdwarf-2 -gstrict-dwarf -O3)
-target_link_options(RetroEngine PRIVATE -g -gdwarf-2 -gstrict-dwarf -O3)
+#target_compile_options(RetroEngine PRIVATE -g -gdwarf-2 -gstrict-dwarf)
+#target_link_options(RetroEngine PRIVATE -g -gdwarf-2 -gstrict-dwarf)
+
+target_compile_options(RetroEngine PRIVATE -O3 -flto)
+target_link_options(RetroEngine PRIVATE -O3 -flto)
 
 target_compile_options(RetroEngine PRIVATE -I../dependencies/mac)
 target_link_options(RetroEngine PRIVATE -L/opt/local/lib -lobjc -Wl,-framework,Foundation -Wl,-framework,OpenGL -Wl,-framework,AppKit)
+
+target_compile_options(RetroEngine PRIVATE -mmacosx-version-min=10.4)
+target_link_options(RetroEngine PRIVATE -mmacosx-version-min=10.4)
 
 pkg_check_modules(OGG ogg)
 
